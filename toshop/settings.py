@@ -30,6 +30,24 @@ DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ["true", "1", "t"]
 
 ALLOWED_HOSTS = []
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+    },
+}
+
 
 # Application definition
 
