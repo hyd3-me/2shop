@@ -31,3 +31,14 @@ class UserRegistrationTests(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertIn("non_field_errors", response.data)  # Validation error key
+
+    def test_register_missing_required_fields(self):
+        url = reverse("users:register")
+        data = {
+            "name": "Test User",
+            "password": "StrongPass123!",
+            "password_confirm": "StrongPass123!",
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("email", response.data)
