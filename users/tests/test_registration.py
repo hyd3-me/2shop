@@ -66,3 +66,20 @@ class UserRegistrationTests(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertIn("password", response.data)
+
+    def test_register_email_unique(self):
+        url = reverse("users:register")
+        data = {
+            "name": "Test User",
+            "email": "unique@example.com",
+            "password": "StrongPass123!",
+            "password_confirm": "StrongPass123!",
+        }
+        # Первый запрос — регистрация успешна
+        response1 = self.client.post(url, data, format="json")
+        self.assertEqual(response1.status_code, 201)
+
+        # Второй запрос с тем же email — ошибка
+        response2 = self.client.post(url, data, format="json")
+        self.assertEqual(response2.status_code, 400)
+        self.assertIn("email", response2.data)
