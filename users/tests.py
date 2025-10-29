@@ -31,3 +31,21 @@ class UserModelTests(TestCase):
         """Test that creating a user without an email raises a ValueError"""
         with self.assertRaises(ValueError):
             User.objects.create_user(email="", password="test1234")
+
+    def test_soft_delete_user(self):
+        # Create a user with active status
+        email = "testuser@example.com"
+        password = "Testpass123"
+        user = User.objects.create_user(email=email, password=password)
+
+        # Perform soft delete by setting is_active to False
+        user.is_active = False
+        user.save()
+
+        # Reload user from the database and check is_active flag
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+
+        # Attempt to login with the soft-deleted user should fail
+        login_success = self.client.login(email=email, password=password)
+        self.assertFalse(login_success)
