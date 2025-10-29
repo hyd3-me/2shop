@@ -19,3 +19,10 @@ class UserLoginTests(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertIn("token", response.data)
+
+    def test_login_failure_wrong_password(self):
+        url = reverse("users:login")
+        data = {"email": self.email, "password": "WrongPassword123!"}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("non_field_errors", response.data)
