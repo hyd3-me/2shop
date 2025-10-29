@@ -26,3 +26,8 @@ class UserModelTests(TestCase):
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
         self.assertTrue(admin_user.is_active)
+
+    def test_create_user_without_email_raises_error(self):
+        """Test that creating a user without an email raises a ValueError"""
+        with self.assertRaises(ValueError):
+            User.objects.create_user(email="", password="test1234")
