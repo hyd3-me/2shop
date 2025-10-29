@@ -15,3 +15,14 @@ class UserModelTests(TestCase):
         self.assertEqual(user.email, email)
         self.assertTrue(user.check_password(password))
         self.assertTrue(user.is_active)
+
+    def test_create_superuser(self):
+        """Test creating a superuser with correct flags"""
+        email = "admin@example.com"
+        password = "Adminpass123"
+        admin_user = User.objects.create_superuser(email=email, password=password)
+
+        self.assertEqual(admin_user.email, email)
+        self.assertTrue(admin_user.is_staff)
+        self.assertTrue(admin_user.is_superuser)
+        self.assertTrue(admin_user.is_active)
