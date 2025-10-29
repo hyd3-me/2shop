@@ -52,3 +52,10 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Must include 'email' and 'password'.")
         attrs["user"] = user
         return attrs
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("email", "name")
+        read_only_fields = ("email",)
