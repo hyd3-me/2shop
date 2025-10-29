@@ -45,3 +45,16 @@ class UserModelTests(TestCase):
         # Reload user and check is_active flag
         user.refresh_from_db()
         self.assertFalse(user.is_active)
+
+    def test_cannot_login_after_soft_delete(self):
+        # Create a user
+        email = "inactive@example.com"
+        password = "InactivePass123"
+        user = User.objects.create_user(email=email, password=password)
+
+        # Soft delete the user using the service function
+        services.soft_delete_user(user)
+
+        # Attempt to login - should fail because user is not active
+        login_success = self.client.login(email=email, password=password)
+        self.assertFalse(login_success)
