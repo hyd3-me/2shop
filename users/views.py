@@ -10,6 +10,7 @@ from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
     UserProfileSerializer,
+    PasswordChangeSerializer,
 )
 
 
@@ -51,3 +52,22 @@ class UserProfileUpdateView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class PasswordChangeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PasswordChangeSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        if not user.check_password(serializer.validated_data["old_password"]):
+            return Response(
+                {"old_password": ["Wrong password."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+        return Response({"detail": "Password changed successfully."})

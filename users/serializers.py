@@ -59,3 +59,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ("email", "name")
         read_only_fields = ("email",)
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    new_password_confirm = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data["new_password"] != data["new_password_confirm"]:
+            raise serializers.ValidationError(
+                {"new_password_confirm": "Passwords do not match."}
+            )
+        validate_password(data["new_password"], self.context["request"].user)
+        return data
