@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Category, Order, OrderItem
+from .models import Cart, CartItem, Product, Category, Order, OrderItem
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -33,3 +33,34 @@ class OrderSerializer(serializers.ModelSerializer):
         for item_data in items_data:
             OrderItem.objects.create(order=order, **item_data)
         return order
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ["product", "quantity"]
+
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True)
+
+    class Meta:
+        model = Cart
+        fields = ["id", "items"]
+
+    def create(self, validated_data):
+        items_data = validated_data.pop("items")
+        user = self.context["request"].user
+        cart, created = Cart.objects.get_or_create(user=user)
+        cart.items.all().delete()
+        for item_data in items_data:
+            CartItem.objects.create(cart=cart, **item_data)
+        return cart
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop("items")
+        instance.items.all().delete()
+        for item_data in items_data:
+            CartItem.objects.create(cart=instance, **item_data)
+        instance.save()
+        return instance
