@@ -1,6 +1,8 @@
 from django.test import TestCase
-from shop.models import Role, BusinessElement, AccessRule
 from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient, APITestCase
+from django.urls import reverse
+from shop.models import Role, BusinessElement, AccessRule
 
 User = get_user_model()
 
@@ -36,3 +38,13 @@ class AccessControlModelsTest(TestCase):
         self.assertEqual(rule.business_element.name, "Product")
         self.assertTrue(rule.read_permission)
         self.assertFalse(rule.delete_permission)
+
+
+class AccessRulePermissionTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse("shop:category-list")
+
+    def test_unauthenticated_access(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 401)
