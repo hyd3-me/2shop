@@ -13,47 +13,68 @@ Key features include:
 The project focuses on designing a robust database schema and security mechanisms beyond default framework features, tailored for real-world access control scenarios.
 
 
-Schema for Access Control Management
-1. Пользователи и роли
+Access Control System Design
+Overview
 
-    users: таблица с информацией о пользователях.
+This project implements a custom role-based access control (RBAC)
 
-    roles: таблица ролей (например, администратор, менеджер, пользователь).
+system designed to finely manage user permissions across various business resources within the API.
 
-    Связь: users_roles — таблица many-to-many, связывает пользователя с ролями.
+The system allows flexible, scalable control over who can read, create, update, or delete specific resources, with distinctions between accessing all objects or only those owned by the user.
+Database Schema
 
-2. Объекты бизнес-логики (business objects)
+    Roles
+    Defines distinct user roles such as Administrator, Manager, User, and Guest. Each user can be assigned one or more roles.
 
-    business_elements: таблица, описывающая объекты, к которым применяется доступ (например, категории, товары, заказы, пользователи).
+    Business Elements
+    Abstract representations of the business objects in the system (e.g., Users, Categories, Products, Orders, Cart). Each element denotes an API resource with access rules.
 
-    В таблице можно хранить основные метаданные: название, тип, уникальный ключ.
+    Access Rules
+    Link roles with business elements and define permissions using boolean flags for operations:
 
-3. Правила доступа
+        read - Permission to read own objects.
 
-    access_rules: таблица, описывающая правила доступа.
+        read_all - Permission to read all objects.
 
-        role_id: ссылка на роль.
+        create - Permission to create objects.
 
-        element_id: ссылка на объект бизнес-логики.
+        update - Permission to update own objects.
 
-        Права:
+        update_all - Permission to update all objects.
 
-            read (bool)
+        delete - Permission to delete own objects.
 
-            create (bool)
+        delete_all - Permission to delete all objects.
 
-            update (bool)
+Interaction Workflow
 
-            delete (bool)
+    On each request, a custom middleware or permission class authenticates the user and collects their roles.
 
-        В контексте: может быть ограничение только для владения (например, пользователь может менять только свои заказы).
+    The system then verifies if the user’s roles grant sufficient permissions for the requested resource and action.
 
-4. Реализация логики
+    A response with HTTP 401 is returned if the user is unauthenticated.
 
-    При каждом запросе API система определяет пользователя и его роли.
+    A response with HTTP 403 is returned if the user is authenticated but lacks the necessary permissions.
 
-    Далее проверяет наличие соответствующих прав доступа к запрошенному ресурсу (объекту или его типу).
+Integration with Project Models
 
-    В случае отсутствия прав — возвращается статус 403 (Forbidden).
+    User accounts are linked with roles via a role assignment mechanism.
 
-    В случае, если пользователь не авторизован — 401 (Unauthorized).
+    Business elements correspond to the models already implemented such as Category, Product, Order, and Cart.
+
+    Access logic is encapsulated in custom DRF permissions or middleware that enforce rules dynamically based on the database configuration.
+
+Administration
+
+    Administrative users have API endpoints to manage roles and access rules, allowing real-time configuration of permissions.
+
+    The system supports adding new roles, defining new business elements, and updating access permissions without code changes.
+
+Benefits
+
+    Fine-grained, flexible access control suited for complex business requirements.
+
+    Scalable architecture supports growth and new resource types.
+
+    Clear separation of authentication and authorization concerns.
+
