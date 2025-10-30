@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import Product, Category
-from .serializers import ProductSerializer, CategorySerializer
+from .models import Product, Category, Order
+from .serializers import ProductSerializer, CategorySerializer, OrderSerializer
 from rest_framework.permissions import AllowAny
 
 
@@ -14,3 +14,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer

@@ -2,6 +2,8 @@ from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
 from shop.models import Product, Category
+from shop.models import Order, OrderItem, Product, Category
+from users.models import User
 
 
 class CategoryAPITest(APITestCase):
@@ -29,3 +31,31 @@ class ProductAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Product.objects.count(), 1)
         self.assertEqual(Product.objects.get().name, "Laptop")
+
+
+class OrderAPITest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="customer@example.com", password="pass1234"
+        )
+        self.category = Category.objects.create(name="Books")
+        self.product = Product.objects.create(
+            name="Django Guide", category=self.category, price=30.00
+        )
+
+    def test_create_order(self):
+        self.client.force_authenticate(user=self.user)
+        url = reverse("shop:order-list")
+        data = {
+            "user": self.user.id,
+            "items": [{"product": self.product.id, "quantity": 2}],
+            "status": "pending",
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Order.objects.count(), 1)
+        order = Order.objects.get()
+        self.assertEqual(order.user, self.user)
+        self.assertEqual(order.items.count(), 1)
+        self.assertEqual(order.items.first().product, self.product)
+        self.assertEqual(order.items.first().quantity, 2)
