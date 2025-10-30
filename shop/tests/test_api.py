@@ -1,4 +1,4 @@
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 from django.urls import reverse
 from rest_framework import status
 from shop.models import Product, Category
@@ -7,10 +7,17 @@ from users.models import User
 
 
 class CategoryAPITest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse("shop:category-list")
+        self.user = User.objects.create_user(
+            email="testuser@example.com", password="testpass"
+        )
+        self.client.force_authenticate(user=self.user)
+
     def test_create_category(self):
-        url = reverse("shop:category-list")
         data = {"name": "Books"}
-        response = self.client.post(url, data, format="json")
+        response = self.client.post(self.url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Category.objects.count(), 1)
         self.assertEqual(Category.objects.get().name, "Books")
