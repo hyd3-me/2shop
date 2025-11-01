@@ -1,8 +1,17 @@
 from rest_framework.test import APIClient, APITestCase
 from django.urls import reverse
 from rest_framework import status
-from shop.models import Product, Category
-from shop.models import Cart, CartItem, Order, OrderItem, Product, Category
+from shop.models import (
+    Cart,
+    CartItem,
+    Order,
+    OrderItem,
+    Product,
+    Category,
+    Role,
+    BusinessElement,
+    AccessRule,
+)
 from users.models import User
 
 
@@ -10,9 +19,23 @@ class CategoryAPITest(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.url = reverse("shop:category-list")
+
+        self.role_admin = Role.objects.create(name="admin")
+        self.element_category = BusinessElement.objects.create(
+            name="Category", description="Category business model"
+        )
+
+        AccessRule.objects.create(
+            role=self.role_admin,
+            business_element=self.element_category,
+            create_permission=True,
+        )
+
         self.user = User.objects.create_user(
             email="testuser@example.com", password="testpass"
         )
+        self.user.roles.add(self.role_admin)
+
         self.client.force_authenticate(user=self.user)
 
     def test_create_category(self):
