@@ -260,3 +260,37 @@ class AccessRulePermissionTest(APITestCase):
 
         data = response.json()
         self.assertEqual(data["name"], "Readable Product")
+
+
+class ManagerAccessRulePermissionTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.role_manager = Role.objects.create(name="manager")
+        self.element_product = BusinessElement.objects.create(name="Product")
+
+        AccessRule.objects.create(
+            role=self.role_manager,
+            business_element=self.element_product,
+            create_permission=True,
+            read_permission=True,
+            update_permission=True,
+            delete_permission=False,
+        )
+
+        self.category = Category.objects.create(name="Manager Category")
+
+        self.manager_user = User.objects.create_user(
+            email="manager@example.com", password="managerpass"
+        )
+        self.manager_user.roles.add(self.role_manager)
+
+    def test_create_product_allowed_for_manager(self):
+        self.client.force_authenticate(user=self.manager_user)
+        url = reverse("shop:product-list")
+        data = {
+            "name": "Manager Product",
+            "category": self.category.id,
+            "price": "150.00",
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
