@@ -296,11 +296,6 @@ class ManagerAccessRulePermissionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_read_product_allowed_for_manager(self):
-        element = BusinessElement.objects.get(name="Product")
-        rule = AccessRule.objects.get(role=self.role_manager, business_element=element)
-        rule.read_permission = True
-        rule.save()
-
         self.client.force_authenticate(user=self.manager_user)
 
         product = Product.objects.create(
@@ -330,3 +325,14 @@ class ManagerAccessRulePermissionTest(APITestCase):
 
         product.refresh_from_db()
         self.assertEqual(product.name, "Updated Manager Product")
+
+    def test_delete_product_forbidden_for_manager(self):
+        self.client.force_authenticate(user=self.manager_user)
+
+        product = Product.objects.create(
+            name="To Be Deleted", category=self.category, price="60.00"
+        )
+
+        url = reverse("shop:product-detail", kwargs={"pk": product.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
