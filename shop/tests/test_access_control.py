@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from django.urls import reverse
-from shop.models import Role, BusinessElement, AccessRule, Category
+from shop.models import Role, BusinessElement, AccessRule, Category, Product
 
 User = get_user_model()
 
@@ -195,3 +195,29 @@ class AccessRulePermissionTest(APITestCase):
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_update_product_allowed_for_admin(self):
+        element = BusinessElement.objects.get(name="Product")
+        AccessRule.objects.update_or_create(
+            role=self.role_admin,
+            business_element=element,
+            defaults={"update_permission": True},
+        )
+
+        self.client.force_authenticate(user=self.admin_user)
+
+        product = Product.objects.create(
+            name="Old Name", category=self.category, price="50.00"
+        )
+
+        url = reverse("shop:product-detail", kwargs={"pk": product.pk})
+        data = {
+            "name": "Updated Product Name",
+            "category": self.category.id,
+            "price": "75.00",
+        }
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        product.refresh_from_db()
+        self.assertEqual(product.name, "Updated Product Name")
