@@ -311,3 +311,22 @@ class ManagerAccessRulePermissionTest(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["name"], "Readable Product")
+
+    def test_update_product_allowed_for_manager(self):
+        self.client.force_authenticate(user=self.manager_user)
+
+        product = Product.objects.create(
+            name="Old Manager Product", category=self.category, price="80.00"
+        )
+
+        url = reverse("shop:product-detail", kwargs={"pk": product.pk})
+        data = {
+            "name": "Updated Manager Product",
+            "category": self.category.id,
+            "price": "100.00",
+        }
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        product.refresh_from_db()
+        self.assertEqual(product.name, "Updated Manager Product")
