@@ -1,0 +1,28 @@
+from rest_framework.permissions import BasePermission
+from shop.models import AccessRule, BusinessElement
+
+
+class AccessRulePermission(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        element_name = "Category"
+        try:
+            element = BusinessElement.objects.get(name=element_name)
+        except BusinessElement.DoesNotExist:
+            return False
+
+        user_roles = request.user.roles.all()
+
+        if request.method == "POST":
+            for role in user_roles:
+                try:
+                    rule = AccessRule.objects.get(role=role, business_element=element)
+                    if rule.create_permission:
+                        return True
+                except AccessRule.DoesNotExist:
+                    continue
+            return False
+
+        return True

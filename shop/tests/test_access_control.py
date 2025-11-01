@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient, APITestCase
+from rest_framework import status
 from django.urls import reverse
 from shop.models import Role, BusinessElement, AccessRule
 
@@ -45,6 +46,39 @@ class AccessRulePermissionTest(APITestCase):
         self.client = APIClient()
         self.url = reverse("shop:category-list")
 
+        self.role_admin = Role.objects.create(name="admin")
+        self.role_user = Role.objects.create(name="user")
+
+        self.element_category = BusinessElement.objects.create(
+            name="Category", description="Category business model"
+        )
+
+        AccessRule.objects.create(
+            role=self.role_admin,
+            business_element=self.element_category,
+            create_permission=True,
+        )
+        AccessRule.objects.create(
+            role=self.role_user,
+            business_element=self.element_category,
+            create_permission=False,
+        )
+
+        self.admin_user = User.objects.create_user(
+            email="admin@example.com", password="adminpass"
+        )
+        self.admin_user.roles.add(self.role_admin)
+
+        self.normal_user = User.objects.create_user(
+            email="user@example.com", password="userpass"
+        )
+        self.normal_user.roles.add(self.role_user)
+
     def test_unauthenticated_access(self):
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_category_forbidden(self):
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.post(self.url, {"name": "Books"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
