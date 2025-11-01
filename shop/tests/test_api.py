@@ -48,9 +48,21 @@ class CategoryAPITest(APITestCase):
 
 class ProductAPITest(APITestCase):
     def setUp(self):
+        self.element_product = BusinessElement.objects.create(
+            name="Product", description="Product business model"
+        )
+        role = Role.objects.create(name="manager")
+        AccessRule.objects.create(
+            role=role, business_element=self.element_product, create_permission=True
+        )
+        self.user = User.objects.create_user(
+            email="creator@example.com", password="pass1234"
+        )
+        self.user.roles.add(role)
         self.category = Category.objects.create(name="Electronics")
 
     def test_create_product(self):
+        self.client.force_authenticate(user=self.user)
         url = reverse("shop:product-list")
         data = {
             "name": "Laptop",
