@@ -132,3 +132,24 @@ class AccessRulePermissionTest(APITestCase):
         url = reverse("shop:category-detail", kwargs={"pk": category.pk})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_category_allowed_for_user_with_permission(self):
+        element = BusinessElement.objects.get(name="Category")
+        rule, created = AccessRule.objects.get_or_create(
+            role=self.role_user,
+            business_element=element,
+            defaults={"update_permission": True},
+        )
+        if not created:
+            rule.update_permission = True
+            rule.save()
+
+        self.client.force_authenticate(user=self.normal_user)
+        category = Category.objects.create(name="Old Name")
+        url = reverse("shop:category-detail", kwargs={"pk": category.pk})
+        data = {"name": "Updated Name"}
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        category.refresh_from_db()
+        self.assertEqual(category.name, "Updated Name")
