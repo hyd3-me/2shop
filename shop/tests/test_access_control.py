@@ -336,3 +336,39 @@ class ManagerAccessRulePermissionTest(APITestCase):
         url = reverse("shop:product-detail", kwargs={"pk": product.pk})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AdminOrderAccessRulePermissionTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.role_admin = Role.objects.create(name="admin")
+        self.element_order = BusinessElement.objects.create(name="Order")
+
+        AccessRule.objects.create(
+            role=self.role_admin,
+            business_element=self.element_order,
+            create_permission=True,
+            read_permission=True,
+            update_permission=True,
+            delete_permission=True,
+        )
+
+        self.admin_user = User.objects.create_user(
+            email="admin_order@example.com", password="adminpass"
+        )
+        self.admin_user.roles.add(self.role_admin)
+        self.category = Category.objects.create(name="Books")
+        self.product = Product.objects.create(
+            name="Django Guide", category=self.category, price=30.00
+        )
+
+    def test_create_order_allowed_for_admin(self):
+        self.client.force_authenticate(user=self.admin_user)
+        url = reverse("shop:order-list")
+        data = {
+            "user": self.admin_user.id,
+            "status": "pending",
+            "items": [{"product": self.product.id, "quantity": 2}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
