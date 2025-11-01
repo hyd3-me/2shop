@@ -294,3 +294,20 @@ class ManagerAccessRulePermissionTest(APITestCase):
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_read_product_allowed_for_manager(self):
+        element = BusinessElement.objects.get(name="Product")
+        rule = AccessRule.objects.get(role=self.role_manager, business_element=element)
+        rule.read_permission = True
+        rule.save()
+
+        self.client.force_authenticate(user=self.manager_user)
+
+        product = Product.objects.create(
+            name="Readable Product", category=self.category, price="75.00"
+        )
+
+        url = reverse("shop:product-detail", kwargs={"pk": product.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["name"], "Readable Product")
