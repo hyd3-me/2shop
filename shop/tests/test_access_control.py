@@ -221,3 +221,21 @@ class AccessRulePermissionTest(APITestCase):
 
         product.refresh_from_db()
         self.assertEqual(product.name, "Updated Product Name")
+
+    def test_delete_product_allowed_for_admin(self):
+        element = BusinessElement.objects.get(name="Product")
+        AccessRule.objects.update_or_create(
+            role=self.role_admin,
+            business_element=element,
+            defaults={"delete_permission": True},
+        )
+
+        self.client.force_authenticate(user=self.admin_user)
+
+        product = Product.objects.create(
+            name="Delete Me", category=self.category, price="20.00"
+        )
+        url = reverse("shop:product-detail", kwargs={"pk": product.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Product.objects.filter(pk=product.pk).exists())
