@@ -120,3 +120,15 @@ class AccessRulePermissionTest(APITestCase):
         data = {"name": "New Name"}
         response = self.client.put(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_category_forbidden_for_user_without_permission(self):
+        element = BusinessElement.objects.get(name="Category")
+        rule = AccessRule.objects.get(role=self.role_user, business_element=element)
+        rule.delete_permission = False
+        rule.save()
+
+        self.client.force_authenticate(user=self.normal_user)
+        category = Category.objects.create(name="Test Delete")
+        url = reverse("shop:category-detail", kwargs={"pk": category.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
