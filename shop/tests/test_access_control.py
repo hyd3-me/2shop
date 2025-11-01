@@ -97,3 +97,13 @@ class AccessRulePermissionTest(APITestCase):
         self.client.force_authenticate(user=self.normal_user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_read_category_forbidden_for_user_without_permission(self):
+        element = BusinessElement.objects.get(name="Category")
+        rule = AccessRule.objects.get(role=self.role_user, business_element=element)
+        rule.read_permission = False
+        rule.save()
+
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
