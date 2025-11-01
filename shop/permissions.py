@@ -35,4 +35,14 @@ class AccessRulePermission(BasePermission):
                     continue
             return False
 
+        if request.method in ["PUT", "PATCH"]:
+            for role in user_roles:
+                try:
+                    rule = AccessRule.objects.get(role=role, business_element=element)
+                    if rule.update_permission:
+                        return True
+                except AccessRule.DoesNotExist:
+                    continue
+            return False
+
         return True

@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from django.urls import reverse
-from shop.models import Role, BusinessElement, AccessRule
+from shop.models import Role, BusinessElement, AccessRule, Category
 
 User = get_user_model()
 
@@ -106,4 +106,17 @@ class AccessRulePermissionTest(APITestCase):
 
         self.client.force_authenticate(user=self.normal_user)
         response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_category_forbidden_for_user_without_permission(self):
+        element = BusinessElement.objects.get(name="Category")
+        rule = AccessRule.objects.get(role=self.role_user, business_element=element)
+        rule.update_permission = False
+        rule.save()
+
+        self.client.force_authenticate(user=self.normal_user)
+        category = Category.objects.create(name="Old Name")
+        url = reverse("shop:category-detail", kwargs={"pk": category.pk})
+        data = {"name": "New Name"}
+        response = self.client.put(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
