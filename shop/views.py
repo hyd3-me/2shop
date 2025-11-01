@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from .models import Cart, Product, Category, Order
 from rest_framework.permissions import AllowAny
-from shop.permissions import AccessRulePermission
+from shop.permissions import AccessRulePermission, AccessRulePermissionProduct
 from .serializers import (
     CartSerializer,
     ProductSerializer,
@@ -19,7 +19,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AccessRulePermissionProduct]
 
 
 class OrderViewSet(viewsets.ModelViewSet):

@@ -64,6 +64,11 @@ class AccessRulePermissionTest(APITestCase):
             create_permission=False,
         )
 
+        self.element_product = BusinessElement.objects.create(
+            name="Product", description="Product business model"
+        )
+        self.category = Category.objects.create(name="Electronics")
+
         self.admin_user = User.objects.create_user(
             email="admin@example.com", password="adminpass"
         )
@@ -153,3 +158,20 @@ class AccessRulePermissionTest(APITestCase):
 
         category.refresh_from_db()
         self.assertEqual(category.name, "Updated Name")
+
+    def test_create_product_allowed_for_user_with_permission(self):
+        element = BusinessElement.objects.get(name="Product")
+        rule, created = AccessRule.objects.get_or_create(
+            role=self.role_user,
+            business_element=element,
+            defaults={"create_permission": True},
+        )
+        if not created:
+            rule.create_permission = True
+            rule.save()
+
+        self.client.force_authenticate(user=self.normal_user)
+        url = reverse("shop:product-list")
+        data = {"name": "New Product", "category": self.category.id, "price": "100.00"}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
