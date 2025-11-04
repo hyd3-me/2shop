@@ -392,3 +392,11 @@ class AdminOrderAccessRulePermissionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         order.refresh_from_db()
         self.assertEqual(order.status, "processing")
+
+    def test_delete_order_allowed_for_admin(self):
+        self.client.force_authenticate(user=self.admin_user)
+        order = Order.objects.create(user=self.admin_user, status="pending")
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Order.objects.filter(pk=order.pk).exists())
