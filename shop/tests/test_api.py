@@ -86,6 +86,18 @@ class OrderAPITest(APITestCase):
         )
 
     def test_create_order(self):
+        self.role_user = Role.objects.create(name="user")
+        self.element_order = BusinessElement.objects.create(name="Order")
+
+        AccessRule.objects.create(
+            role=self.role_user,
+            business_element=self.element_order,
+            create_permission=True,
+            read_permission=True,
+            update_permission=False,
+            delete_permission=False,
+        )
+        self.user.roles.add(self.role_user)
         self.client.force_authenticate(user=self.user)
         url = reverse("shop:order-list")
         data = {
