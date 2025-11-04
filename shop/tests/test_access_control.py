@@ -3,7 +3,15 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from django.urls import reverse
-from shop.models import Role, BusinessElement, AccessRule, Category, Product
+from shop.models import (
+    Role,
+    BusinessElement,
+    AccessRule,
+    Category,
+    Product,
+    Order,
+    OrderItem,
+)
 
 User = get_user_model()
 
@@ -372,3 +380,15 @@ class AdminOrderAccessRulePermissionTest(APITestCase):
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_partial_update_order_status_allowed_for_admin(self):
+        self.client.force_authenticate(user=self.admin_user)
+        order = Order.objects.create(user=self.admin_user, status="pending")
+        OrderItem.objects.create(order=order, product=self.product, quantity=1)
+
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        data = {"status": "processing"}
+        response = self.client.patch(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "processing")
