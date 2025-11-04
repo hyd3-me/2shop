@@ -519,3 +519,18 @@ class UserOrderAccessRulePermissionTest(APITestCase):
         url = reverse("shop:order-detail", kwargs={"pk": order.pk})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_order_forbidden_for_other_user(self):
+        url = reverse("shop:order-list")
+
+        other_user = User.objects.create_user(
+            email="other@example.com", password="otherpass"
+        )
+
+        data = {
+            "user": other_user.id,  # пытаемся создать заказ для другого пользователя
+            "status": "pending",
+            "items": [{"product": self.product.id, "quantity": 1}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
