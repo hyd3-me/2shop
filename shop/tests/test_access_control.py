@@ -400,3 +400,47 @@ class AdminOrderAccessRulePermissionTest(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Order.objects.filter(pk=order.pk).exists())
+
+
+class ManagerOrderAccessRulePermissionTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.role_manager = Role.objects.create(name="manager")
+        self.element_order = BusinessElement.objects.create(name="Order")
+
+        AccessRule.objects.create(
+            role=self.role_manager,
+            business_element=self.element_order,
+            create_permission=True,
+            read_permission=True,
+            update_permission=True,
+            delete_permission=False,
+        )
+
+        self.category = Category.objects.create(name="Books")
+        self.product = Product.objects.create(
+            name="Django Guide", category=self.category, price=30.00
+        )
+
+        self.manager_user = User.objects.create_user(
+            email="manager_order@example.com", password="managerpass"
+        )
+        self.manager_user.roles.add(self.role_manager)
+
+    def test_create_order_allowed_for_manager(self):
+        self.client.force_authenticate(user=self.manager_user)
+        url = reverse("shop:order-list")
+        data = {
+            "user": self.manager_user.id,
+            "status": "pending",
+            "items": [{"product": self.product.id, "quantity": 2}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_delete_order_forbidden_for_manager(self):
+        self.client.force_authenticate(user=self.manager_user)
+        order = Order.objects.create(user=self.manager_user, status="pending")
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
