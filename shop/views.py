@@ -32,6 +32,14 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [AccessRulePermissionOrder]
 
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Order.objects.none()
+        if not user.roles.filter(name__in=["admin", "manager"]).exists():
+            return Order.objects.all()
+        return Order.objects.filter(user=user)
+
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)

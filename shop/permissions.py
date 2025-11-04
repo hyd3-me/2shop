@@ -176,3 +176,31 @@ class AccessRulePermissionOrder(BasePermission):
             return False
 
         return True
+
+    def has_object_permission(self, request, view, obj):
+        user_roles = request.user.roles.all()
+
+        for role in user_roles:
+            try:
+                rule = AccessRule.objects.get(role=role, business_element__name="Order")
+                if role.name in ["admin", "manager"]:
+                    if request.method in SAFE_METHODS and rule.read_permission:
+                        return True
+                    if request.method in ["PUT", "PATCH"] and rule.update_permission:
+                        return True
+                    if request.method == "DELETE" and rule.delete_permission:
+                        return True
+                elif role.name == "user":
+                    if obj.user == request.user:
+                        if request.method in SAFE_METHODS and rule.read_permission:
+                            return True
+                        if (
+                            request.method in ["PUT", "PATCH"]
+                            and rule.update_permission
+                        ):
+                            return True
+                        if request.method == "DELETE" and rule.delete_permission:
+                            return True
+            except AccessRule.DoesNotExist:
+                continue
+        return False
