@@ -444,3 +444,21 @@ class ManagerOrderAccessRulePermissionTest(APITestCase):
         url = reverse("shop:order-detail", kwargs={"pk": order.pk})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_read_order_allowed_for_manager(self):
+        self.client.force_authenticate(user=self.manager_user)
+        order = Order.objects.create(user=self.manager_user, status="pending")
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["id"], order.id)
+
+    def test_partial_update_order_allowed_for_manager(self):
+        self.client.force_authenticate(user=self.manager_user)
+        order = Order.objects.create(user=self.manager_user, status="pending")
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        data = {"status": "processing"}
+        response = self.client.patch(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "processing")
