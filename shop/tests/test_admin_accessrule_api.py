@@ -36,3 +36,21 @@ class AdminAccessRuleAPITest(APITestCase):
         self.assertEqual(response.status_code, 200)
         roles_in_response = [r["role"] for r in response.json()]
         self.assertIn(self.user_role.id, roles_in_response)
+
+    def test_admin_can_update_access_rule(self):
+        url = reverse("shop:accessrule-detail", kwargs={"pk": self.access_rule.pk})
+        data = {
+            "create_permission": False,
+            "read_permission": False,
+            "update_permission": True,
+            "delete_permission": False,
+            "read_all_permission": False,
+            "update_all_permission": False,
+            "delete_all_permission": False,
+            "can_create_for_other_users": False,
+            "role": self.user_role.id,
+            "business_element": self.business_element.id,
+        }
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["update_permission"], True)
