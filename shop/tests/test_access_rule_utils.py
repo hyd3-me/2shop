@@ -1,6 +1,6 @@
 from django.test import TestCase
 from shop.models import Role, BusinessElement, AccessRule
-from shop.utils.access_rule_utils import create_access_rule
+from shop.utils.access_rule_utils import create_access_rule, update_access_rule
 
 
 class AccessRuleUtilsTest(TestCase):
@@ -89,4 +89,87 @@ class AccessRuleUtilsTest(TestCase):
                 business_element=self.order_element,
                 create_permission=True,
                 read_permission=True,
+            )
+
+    def test_update_access_rule(self):
+        rule = create_access_rule(
+            role=self.admin_role,
+            business_element=self.order_element,
+            create_permission=True,
+            read_permission=True,
+            can_create_for_other_users=False,
+        )
+        updated_rule = update_access_rule(
+            role=self.admin_role,
+            business_element=self.order_element,
+            can_create_for_other_users=True,
+            create_permission=False,
+        )
+        self._assert_rule_fields(
+            updated_rule,
+            {
+                "create_permission": False,
+                "read_permission": True,
+                "update_permission": False,
+                "delete_permission": False,
+                "can_create_for_other_users": True,
+                "read_all_permission": False,
+                "update_all_permission": False,
+                "delete_all_permission": False,
+            },
+        )
+
+    def test_update_access_rule_all_fields(self):
+        rule = create_access_rule(
+            role=self.admin_role,
+            business_element=self.order_element,
+            create_permission=True,
+            read_permission=True,
+            update_permission=False,
+            delete_permission=False,
+            can_create_for_other_users=False,
+        )
+        updated_rule = update_access_rule(
+            role=self.admin_role,
+            business_element=self.order_element,
+            create_permission=False,
+            read_permission=False,
+            update_permission=True,
+            delete_permission=True,
+            can_create_for_other_users=True,
+        )
+        expected = {
+            "create_permission": False,
+            "read_permission": False,
+            "update_permission": True,
+            "delete_permission": True,
+            "can_create_for_other_users": True,
+            "read_all_permission": False,
+            "update_all_permission": False,
+            "delete_all_permission": False,
+        }
+        self._assert_rule_fields(updated_rule, expected)
+
+    def test_update_access_rule_partial_fields(self):
+        rule = create_access_rule(
+            role=self.admin_role,
+            business_element=self.order_element,
+            create_permission=True,
+            read_permission=True,
+        )
+        updated_rule = update_access_rule(
+            role=self.admin_role,
+            business_element=self.order_element,
+            update_permission=True,
+        )
+        self.assertTrue(updated_rule.update_permission)
+        self.assertTrue(updated_rule.create_permission)
+        self.assertTrue(updated_rule.read_permission)
+
+    def test_update_access_rule_nonexistent_raises(self):
+        with self.assertRaises(ValueError):
+            update_access_rule(
+                role=self.manager_role,
+                business_element=self.order_element,
+                create_permission=True,
             )
