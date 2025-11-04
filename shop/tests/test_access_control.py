@@ -462,3 +462,60 @@ class ManagerOrderAccessRulePermissionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         order.refresh_from_db()
         self.assertEqual(order.status, "processing")
+
+
+class UserOrderAccessRulePermissionTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.role_user = Role.objects.create(name="user")
+        self.element_order = BusinessElement.objects.create(name="Order")
+
+        AccessRule.objects.create(
+            role=self.role_user,
+            business_element=self.element_order,
+            create_permission=True,
+            read_permission=True,
+            update_permission=False,
+            delete_permission=False,
+        )
+
+        self.category = Category.objects.create(name="Books")
+        self.product = Product.objects.create(
+            name="Django Guide", category=self.category, price=30.00
+        )
+
+        self.user = User.objects.create_user(
+            email="user_order@example.com", password="userpass"
+        )
+        self.user.roles.add(self.role_user)
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_order_allowed_for_user(self):
+        url = reverse("shop:order-list")
+        data = {
+            "user": self.user.id,
+            "status": "pending",
+            "items": [{"product": self.product.id, "quantity": 1}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_read_order_allowed_for_user(self):
+        order = Order.objects.create(user=self.user, status="pending")
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["id"], order.id)
+
+    def test_update_order_forbidden_for_user(self):
+        order = Order.objects.create(user=self.user, status="pending")
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        data = {"status": "processing"}
+        response = self.client.patch(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_order_forbidden_for_user(self):
+        order = Order.objects.create(user=self.user, status="pending")
+        url = reverse("shop:order-detail", kwargs={"pk": order.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
