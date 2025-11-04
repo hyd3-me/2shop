@@ -82,6 +82,7 @@ class AccessRule(models.Model):
     read_permission = models.BooleanField(default=False)
     read_all_permission = models.BooleanField(default=False)
     create_permission = models.BooleanField(default=False)
+    can_create_for_other_users = models.BooleanField(default=False)
     update_permission = models.BooleanField(default=False)
     update_all_permission = models.BooleanField(default=False)
     delete_permission = models.BooleanField(default=False)

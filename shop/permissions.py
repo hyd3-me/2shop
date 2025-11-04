@@ -140,12 +140,15 @@ class AccessRulePermissionOrder(BasePermission):
         if request.method == "POST":
             if request.method == "POST":
                 user_id = request.data.get("user")
-                if str(request.user.id) != str(user_id):
-                    return False
 
             for role in user_roles:
                 try:
                     rule = AccessRule.objects.get(role=role, business_element=element)
+                    if (
+                        str(request.user.id) != str(user_id)
+                        and not rule.can_create_for_other_users
+                    ):
+                        return False
                     if rule.create_permission:
                         return True
                 except AccessRule.DoesNotExist:

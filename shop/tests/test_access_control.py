@@ -356,6 +356,7 @@ class AdminOrderAccessRulePermissionTest(APITestCase):
             role=self.role_admin,
             business_element=self.element_order,
             create_permission=True,
+            can_create_for_other_users=True,
             read_permission=True,
             update_permission=True,
             delete_permission=True,
@@ -401,6 +402,20 @@ class AdminOrderAccessRulePermissionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Order.objects.filter(pk=order.pk).exists())
 
+    def test_admin_can_create_order_for_other_user(self):
+        self.client.force_authenticate(user=self.admin_user)
+        other_user = User.objects.create_user(
+            email="otheradmin@example.com", password="somepass"
+        )
+        url = reverse("shop:order-list")
+        data = {
+            "user": other_user.id,
+            "status": "pending",
+            "items": [{"product": self.product.id, "quantity": 1}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
 
 class ManagerOrderAccessRulePermissionTest(APITestCase):
     def setUp(self):
@@ -412,6 +427,7 @@ class ManagerOrderAccessRulePermissionTest(APITestCase):
             role=self.role_manager,
             business_element=self.element_order,
             create_permission=True,
+            can_create_for_other_users=True,
             read_permission=True,
             update_permission=True,
             delete_permission=False,
@@ -462,6 +478,20 @@ class ManagerOrderAccessRulePermissionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         order.refresh_from_db()
         self.assertEqual(order.status, "processing")
+
+    def test_manager_can_create_order_for_other_user(self):
+        self.client.force_authenticate(user=self.manager_user)
+        other_user = User.objects.create_user(
+            email="othermanager@example.com", password="somepass"
+        )
+        url = reverse("shop:order-list")
+        data = {
+            "user": other_user.id,
+            "status": "pending",
+            "items": [{"product": self.product.id, "quantity": 1}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
 class UserOrderAccessRulePermissionTest(APITestCase):
@@ -528,7 +558,7 @@ class UserOrderAccessRulePermissionTest(APITestCase):
         )
 
         data = {
-            "user": other_user.id,  # пытаемся создать заказ для другого пользователя
+            "user": other_user.id,
             "status": "pending",
             "items": [{"product": self.product.id, "quantity": 1}],
         }
