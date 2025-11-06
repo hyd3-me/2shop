@@ -8,6 +8,7 @@ class AdminAccessRuleAPITest(APITestCase):
         self.client = APIClient()
         self.admin_role = Role.objects.create(name="admin")
         self.user_role = Role.objects.create(name="user")
+        self.manager_role = Role.objects.create(name="manager")
 
         self.business_element = BusinessElement.objects.create(name="Order")
 
@@ -62,3 +63,11 @@ class AdminAccessRuleAPITest(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.normal_user.refresh_from_db()
         self.assertNotIn(self.user_role, self.normal_user.roles.all())
+
+    def test_admin_can_assign_specific_role_to_user(self):
+        url = reverse("shop:user-assign-role", kwargs={"pk": self.normal_user.id})
+        data = {"role_id": self.manager_role.id}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.normal_user.refresh_from_db()
+        self.assertIn(self.user_role, self.normal_user.roles.all())

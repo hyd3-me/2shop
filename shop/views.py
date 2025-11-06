@@ -92,3 +92,24 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"detail": f"User does not have role {role.name}."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    @action(detail=True, methods=["post"], url_path="assign-role")
+    def assign_role(self, request, pk=None):
+        role_id = request.data.get("role_id")
+        if not role_id:
+            return Response(
+                {"detail": "role_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        user = self.get_object()
+        role = get_object_or_404(Role, pk=role_id)
+        if role not in user.roles.all():
+            user.roles.add(role)
+            user.save()
+            return Response(
+                {"detail": f"Role {role.name} assigned to user."},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"detail": f"User already has role {role.name}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
