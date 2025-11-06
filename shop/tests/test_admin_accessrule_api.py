@@ -85,3 +85,18 @@ class AdminAccessRuleAPITest(APITestCase):
         data = {"role_id": self.user_role.id}
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 403)
+
+    def test_assign_role_response_message(self):
+        url = reverse("shop:user-assign-role", kwargs={"pk": self.normal_user.id})
+        data = {"role_id": self.manager_role.id}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Role manager assigned to user.", response.data["detail"])
+
+    def test_remove_role_response_message(self):
+        self.normal_user.roles.add(self.user_role)
+        url = reverse("shop:user-remove-role", kwargs={"pk": self.normal_user.id})
+        data = {"role_id": self.user_role.id}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(f"Role user removed from user.", response.data["detail"])
