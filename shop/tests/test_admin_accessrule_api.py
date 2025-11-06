@@ -54,3 +54,11 @@ class AdminAccessRuleAPITest(APITestCase):
         response = self.client.put(url, data, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["update_permission"], True)
+
+    def test_admin_can_remove_specific_role_from_user(self):
+        url = reverse("shop:user-remove-role", kwargs={"pk": self.normal_user.id})
+        data = {"role_id": self.user_role.id}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.normal_user.refresh_from_db()
+        self.assertNotIn(self.user_role, self.normal_user.roles.all())

@@ -6,6 +6,7 @@ from .views import (
     ProductViewSet,
     OrderViewSet,
     AccessRuleViewSet,
+    UserViewSet,
 )
 
 app_name = "shop"
@@ -15,6 +16,7 @@ router.register(r"products", ProductViewSet)
 router.register(r"orders", OrderViewSet)
 router.register(r"cart", CartViewSet)
 router.register(r"accessrules", AccessRuleViewSet)
+router.register(r"users", UserViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

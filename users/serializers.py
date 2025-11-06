@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from shop.models import Role
 
 User = get_user_model()
 
@@ -59,6 +60,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ("email", "name")
         read_only_fields = ("email",)
+
+
+class UserWithRolesSerializer(serializers.ModelSerializer):
+    roles = serializers.PrimaryKeyRelatedField(many=True, queryset=Role.objects.all())
+
+    class Meta:
+        model = User
+        fields = ("id", "email", "name", "roles")
+        read_only_fields = ("id", "email")
 
 
 class PasswordChangeSerializer(serializers.Serializer):

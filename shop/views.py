@@ -1,7 +1,10 @@
 from rest_framework import viewsets, status
-from .models import Cart, Product, Category, Order, AccessRule
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
+from .models import Cart, Product, Category, Order, AccessRule, User, Role
 from shop.permissions import (
     AccessRulePermission,
     AccessRulePermissionProduct,
@@ -15,6 +18,7 @@ from .serializers import (
     OrderSerializer,
     AccessRuleSerializer,
 )
+from users.serializers import UserWithRolesSerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -59,3 +63,32 @@ class AccessRuleViewSet(viewsets.ModelViewSet):
     queryset = AccessRule.objects.all()
     serializer_class = AccessRuleSerializer
     permission_classes = [IsAdminRolePermission]
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserWithRolesSerializer
+    permission_classes = [IsAdminRolePermission]
+
+    @action(detail=True, methods=["post"], url_path="remove-role")
+    def remove_role(self, request, pk=None):
+        role_id = request.data.get("role_id")
+        if not role_id:
+            return Response(
+                {"detail": "role_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = self.get_object()
+        role = get_object_or_404(Role, pk=role_id)
+
+        if role in user.roles.all():
+            user.roles.remove(role)
+            return Response(
+                {"detail": f"Role {role.name} removed from user."},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response(
+                {"detail": f"User does not have role {role.name}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
