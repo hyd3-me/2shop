@@ -1,5 +1,15 @@
 from rest_framework import serializers
-from .models import Cart, CartItem, Product, Category, Order, OrderItem
+from .models import (
+    Cart,
+    CartItem,
+    Product,
+    Category,
+    Order,
+    OrderItem,
+    Role,
+    BusinessElement,
+    AccessRule,
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -78,3 +88,26 @@ class CartSerializer(serializers.ModelSerializer):
             CartItem.objects.create(cart=instance, **item_data)
         instance.save()
         return instance
+
+
+class AccessRuleSerializer(serializers.ModelSerializer):
+    role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
+    business_element = serializers.PrimaryKeyRelatedField(
+        queryset=BusinessElement.objects.all()
+    )
+
+    class Meta:
+        model = AccessRule
+        fields = [
+            "id",
+            "role",
+            "business_element",
+            "read_permission",
+            "read_all_permission",
+            "create_permission",
+            "update_permission",
+            "update_all_permission",
+            "delete_permission",
+            "delete_all_permission",
+            "can_create_for_other_users",
+        ]

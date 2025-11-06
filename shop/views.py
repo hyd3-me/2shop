@@ -1,17 +1,19 @@
 from rest_framework import viewsets, status
-from .models import Cart, Product, Category, Order
+from .models import Cart, Product, Category, Order, AccessRule
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from shop.permissions import (
     AccessRulePermission,
     AccessRulePermissionProduct,
     AccessRulePermissionOrder,
+    IsAdminRolePermission,
 )
 from .serializers import (
     CartSerializer,
     ProductSerializer,
     CategorySerializer,
     OrderSerializer,
+    AccessRuleSerializer,
 )
 
 
@@ -51,3 +53,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 class CartViewSet(viewsets.ModelViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
+
+
+class AccessRuleViewSet(viewsets.ModelViewSet):
+    queryset = AccessRule.objects.all()
+    serializer_class = AccessRuleSerializer
+    permission_classes = [IsAdminRolePermission]

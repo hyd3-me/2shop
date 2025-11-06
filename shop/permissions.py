@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework import viewsets, permissions, serializers
 from shop.models import AccessRule, BusinessElement
 
 
@@ -204,3 +205,12 @@ class AccessRulePermissionOrder(BasePermission):
             except AccessRule.DoesNotExist:
                 continue
         return False
+
+
+class IsAdminRolePermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.roles.filter(name="admin").exists()
+        )
