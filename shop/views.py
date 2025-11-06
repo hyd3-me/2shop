@@ -19,6 +19,7 @@ from .serializers import (
     AccessRuleSerializer,
 )
 from users.serializers import UserWithRolesSerializer
+from shop.utils.access_rule_utils import assign_role_to_user, remove_role_from_user
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -81,8 +82,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         role = get_object_or_404(Role, pk=role_id)
 
-        if role in user.roles.all():
-            user.roles.remove(role)
+        if remove_role_from_user(user, role):
             return Response(
                 {"detail": f"Role {role.name} removed from user."},
                 status=status.HTTP_200_OK,
@@ -102,14 +102,13 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         user = self.get_object()
         role = get_object_or_404(Role, pk=role_id)
-        if role not in user.roles.all():
-            user.roles.add(role)
-            user.save()
+        if assign_role_to_user(user, role):
             return Response(
                 {"detail": f"Role {role.name} assigned to user."},
                 status=status.HTTP_200_OK,
             )
-        return Response(
-            {"detail": f"User already has role {role.name}."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        else:
+            return Response(
+                {"detail": f"User already has role {role.name}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )

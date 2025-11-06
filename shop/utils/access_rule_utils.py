@@ -1,4 +1,5 @@
-from shop.models import AccessRule
+import logging
+from shop.models import AccessRule, User, Role
 
 
 def create_access_rule(
@@ -70,3 +71,32 @@ def update_access_rule(
 
     rule.save()
     return rule
+
+
+logger = logging.getLogger(__name__)
+
+
+def assign_role_to_user(user: User, role: Role) -> bool:
+    if role not in user.roles.all():
+        user.roles.add(role)
+        user.save()
+        logger.info(f"Role '{role.name}' assigned to user '{user.email}'.")
+        return True
+    else:
+        logger.warning(
+            f"User '{user.email}' already has role '{role.name}'. No action taken."
+        )
+        return False
+
+
+def remove_role_from_user(user: User, role: Role) -> bool:
+    if role in user.roles.all():
+        user.roles.remove(role)
+        user.save()
+        logger.info(f"Role '{role.name}' removed from user '{user.email}'.")
+        return True
+    else:
+        logger.warning(
+            f"User '{user.email}' does not have role '{role.name}'. No action taken."
+        )
+        return False
