@@ -71,3 +71,17 @@ class AdminAccessRuleAPITest(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.normal_user.refresh_from_db()
         self.assertIn(self.user_role, self.normal_user.roles.all())
+
+    def test_non_admin_cannot_assign_role(self):
+        self.client.force_authenticate(user=self.normal_user)
+        url = reverse("shop:user-assign-role", kwargs={"pk": self.normal_user.id})
+        data = {"role_id": self.admin_role.id}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 403)
+
+    def test_non_admin_cannot_remove_role(self):
+        self.client.force_authenticate(user=self.normal_user)
+        url = reverse("shop:user-remove-role", kwargs={"pk": self.normal_user.id})
+        data = {"role_id": self.user_role.id}
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 403)
