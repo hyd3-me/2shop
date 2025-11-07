@@ -1,5 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
-from rest_framework import viewsets, permissions, serializers
+from rest_framework import viewsets, permissions, serializers, exceptions
 from shop.models import AccessRule, BusinessElement
 
 

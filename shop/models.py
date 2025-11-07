@@ -60,10 +60,6 @@ class Role(models.Model):
         return self.name
 
 
-User = get_user_model()
-User.add_to_class("roles", models.ManyToManyField(Role, related_name="users"))
-
-
 class BusinessElement(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -95,3 +91,7 @@ class AccessRule(models.Model):
         return (
             f"AccessRule(role={self.role.name}, element={self.business_element.name})"
         )
+
+
+User = get_user_model()
+User.add_to_class("roles", models.ManyToManyField(Role, related_name="users"))
