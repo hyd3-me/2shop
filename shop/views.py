@@ -43,7 +43,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return Order.objects.none()
-        if not user.roles.filter(name__in=["admin", "manager"]).exists():
+        if user.roles.filter(name__in=["admin", "manager"]).exists():
             return Order.objects.all()
         return Order.objects.filter(user=user)
 
