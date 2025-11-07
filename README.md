@@ -1,80 +1,102 @@
-# Custom Authentication & Authorization System
+# Shop Authentication & Authorization System
 
-This backend project implements a custom authentication and authorization system using Python, Django Rest Framework, and PostgreSQL. 
+## О проекте
 
-Key features include:
-- User registration, login, logout, profile update, and soft deletion
-- Role-based access control with fine-grained permissions
-- Secure password storage with bcrypt
-- Token-based authentication with JWT and/or session management
-- API endpoints for user management and administrative control over access rules
-- Mock views simulating business objects with proper access restrictions
+Данный проект представляет собой **кастомную систему аутентификации и авторизации** для интернет-магазина, разработанную в рамках тестового задания. Основная цель - создание собственной системы управления доступом без использования стандартных решений "из коробки" Django.
 
-The project focuses on designing a robust database schema and security mechanisms beyond default framework features, tailored for real-world access control scenarios.
+### Ключевые требования задания
 
+- Реализовать собственную систему аутентификации (не на базе встроенных средств Django)
+- Разработать гибкую систему авторизации на основе ролей и правил доступа
+- Создать модель данных для управления правами пользователей
+- Обеспечить корректные HTTP статусы (401 для неаутентифицированных, 403 для недостаточных прав)
+- Реализовать полный цикл работы с пользователем (регистрация, вход, выход, обновление, удаление)
 
-Access Control System Design
-Overview
+---
 
-This project implements a custom role-based access control (RBAC)
+## Кастомные реализации
 
-system designed to finely manage user permissions across various business resources within the API.
+### Пользовательская модель (User)
 
-The system allows flexible, scalable control over who can read, create, update, or delete specific resources, with distinctions between accessing all objects or only those owned by the user.
-Database Schema
+**Что заменено:**
 
-    Roles
-    Defines distinct user roles such as Administrator, Manager, User, and Guest. Each user can be assigned one or more roles.
+- Стандартная `django.contrib.auth.models.User`
+- Встроенная аутентификация Django
 
-    Business Elements
-    Abstract representations of the business objects in the system (e.g., Users, Categories, Products, Orders, Cart). Each element denotes an API resource with access rules.
+**Что реализовано:**
 
-    Access Rules
-    Link roles with business elements and define permissions using boolean flags for operations:
+```python
+# users/models.py
+class User(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(unique=True)  # Email как идентификатор
+    name = models.CharField(max_length=150, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    
+    objects = UserManager()  # Кастомный менеджер пользователей
 
-        read - Permission to read own objects.
+    USERNAME_FIELD = "email"  # Аутентификация по email вместо username
+```
 
-        read_all - Permission to read all objects.
+#### Особенности
 
-        create - Permission to create objects.
+- Email как уникальный идентификатор (без username)
+- Кастомный UserManager для создания пользователей
+- Сохранена совместимость с PermissionsMixin для будущего расширения
+- Мягкое удаление через is_active=False
 
-        update - Permission to update own objects.
+### Система аутентификации
 
-        update_all - Permission to update all objects.
+**Что заменено:**
 
-        delete - Permission to delete own objects.
+- django.contrib.auth.middleware.AuthenticationMiddleware
+- Стандартная сессионная аутентификация
+- DRF TokenAuthentication
 
-        delete_all - Permission to delete all objects.
+**Что реализовано:**
 
-Interaction Workflow
+```python
+# users/authentication.py
+class CustomJWTAuthentication(authentication.BaseAuthentication):
+    keyword = "Token"
+    
+    def authenticate(self, request):
+        # Кастомная логика проверки JWT токенов
+        # Валидация срока действия и подписи токенов
+        # Интеграция с кастомной моделью Token
+```
 
-    On each request, a custom middleware or permission class authenticates the user and collects their roles.
+#### Особенности
 
-    The system then verifies if the user’s roles grant sufficient permissions for the requested resource and action.
+- Собственная реализация JWT без сторонних библиотек
+- Поддержка стандартного формата Authorization: Token {jwt}
+- Правильная обработка 401/403 ошибок
+- Совместимость с DRF ecosystem
 
-    A response with HTTP 401 is returned if the user is unauthenticated.
+### Модель токенов
 
-    A response with HTTP 403 is returned if the user is authenticated but lacks the necessary permissions.
+**Что заменено:**
 
-Integration with Project Models
+- rest_framework.authtoken.models.Token
 
-    User accounts are linked with roles via a role assignment mechanism.
+Что реализовано:
 
-    Business elements correspond to the models already implemented such as Category, Product, Order, and Cart.
+```python
+# users/models.py
+class Token(models.Model):
+    key = models.CharField(_("Key"), max_length=40, primary_key=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, ...)
+    created = models.DateTimeField(_("Created"), auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()  # Автогенерация ключа
+        return super().save(*args, **kwargs)
+```
 
-    Access logic is encapsulated in custom DRF permissions or middleware that enforce rules dynamically based on the database configuration.
+###$ Особенности
 
-Administration
-
-    Administrative users have API endpoints to manage roles and access rules, allowing real-time configuration of permissions.
-
-    The system supports adding new roles, defining new business elements, and updating access permissions without code changes.
-
-Benefits
-
-    Fine-grained, flexible access control suited for complex business requirements.
-
-    Scalable architecture supports growth and new resource types.
-
-    Clear separation of authentication and authorization concerns.
-
+- Совместимость с DRF Token форматом
+- Автоматическая генерация ключей
+- Интеграция с кастомной пользовательской моделью
+- One-to-one связь с пользователем

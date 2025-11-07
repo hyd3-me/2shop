@@ -1,8 +1,10 @@
 from django.urls import reverse
+from django.conf import settings
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
-from users.models import Token
 from rest_framework import status
+from users.utils.jwt_utils import encode_jwt
+
 
 User = get_user_model()
 
@@ -14,8 +16,8 @@ class UserProfileUpdateTests(APITestCase):
         self.user = User.objects.create_user(
             email=self.email, password=self.password, name="Original Name"
         )
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        self.token = encode_jwt({"user_id": self.user.id}, settings.SECRET_KEY)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token}")
         self.url = reverse("users:profile-update")
 
     def test_update_user_profile_success(self):

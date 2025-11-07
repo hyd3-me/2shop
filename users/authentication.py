@@ -3,7 +3,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from rest_framework import authentication, exceptions, HTTP_HEADER_ENCODING
-from .models import Token
 
 User = get_user_model()
 
@@ -23,13 +22,6 @@ def get_authorization_header(request):
 class CustomJWTAuthentication(authentication.BaseAuthentication):
 
     keyword = "Token"
-    model = None
-
-    def get_model(self):
-        if self.model is not None:
-            return self.model
-
-        return Token
 
     def authenticate(self, request):
         auth = get_authorization_header(request).split()
@@ -45,26 +37,36 @@ class CustomJWTAuthentication(authentication.BaseAuthentication):
             raise exceptions.AuthenticationFailed(msg)
 
         try:
-            token = auth[1].decode()
+            jwt_token = auth[1].decode()
         except UnicodeError:
             msg = _(
                 "Invalid token header. Token string should not contain invalid characters."
             )
             raise exceptions.AuthenticationFailed(msg)
 
-        return self.authenticate_credentials(token)
+        return self.authenticate_credentials(jwt_token)
 
-    def authenticate_credentials(self, key):
-        model = self.get_model()
+    def authenticate_credentials(self, jwt_token):
         try:
-            token = model.objects.select_related("user").get(key=key)
-        except model.DoesNotExist:
-            raise exceptions.AuthenticationFailed(_("Invalid token."))
+            payload = jwt.decode(jwt_token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get("user_id")
 
-        if not token.user.is_active:
-            raise exceptions.AuthenticationFailed(_("User inactive or deleted."))
+            if not user_id:
+                raise exceptions.AuthenticationFailed("Invalid token payload.")
 
-        return (token.user, token)
+            user = User.objects.get(pk=user_id)
+
+            if not user.is_active:
+                raise exceptions.AuthenticationFailed("User inactive or deleted.")
+
+            return (user, jwt_token)
+
+        except jwt.ExpiredSignatureError:
+            raise exceptions.AuthenticationFailed("Token expired.")
+        except jwt.InvalidTokenError:
+            raise exceptions.AuthenticationFailed("Invalid token.")
+        except User.DoesNotExist:
+            raise exceptions.AuthenticationFailed("User not found.")
 
     def authenticate_header(self, request):
         return self.keyword
