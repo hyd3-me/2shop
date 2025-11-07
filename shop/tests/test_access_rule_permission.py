@@ -56,7 +56,6 @@ class UserOrderAccessRulePermissionTest(APITestCase):
         other_order = Order.objects.create(user=self.other_user, status="pending")
         url = reverse("shop:order-detail", kwargs={"pk": other_order.pk})
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_user_can_create_order_for_self(self):

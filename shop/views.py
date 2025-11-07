@@ -39,7 +39,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [AccessRulePermissionOrder]
 
-    def get_queryset(self):
+    def _hide_get_queryset(self):
         user = self.request.user
         if not user.is_authenticated:
             return Order.objects.none()
